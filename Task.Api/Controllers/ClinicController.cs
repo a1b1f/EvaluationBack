@@ -12,13 +12,15 @@ namespace Task.Api.Controllers
     public class ClinicController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly BackupDBContext _backupDBContext;
+        private readonly IMongoCollection<Records> _records;
 
 
-        public ClinicController(IUnitOfWork unitOfWork, BackupDBContext backupDBContext)
+
+        public ClinicController(IUnitOfWork unitOfWork, IOptions<ClincSettings> options)
         {
             _unitOfWork = unitOfWork;
-            _backupDBContext = backupDBContext;
+             var mongo = new MongoClient(options.Value.ConnectionStrings);
+             _records = mongo.GetDatabase(options.Value.DatabaseName).GetCollection<Records>(options.Value.RecordCollection);
         }
 
         [HttpPost("AddRecordData")]
@@ -39,8 +41,7 @@ namespace Task.Api.Controllers
             recordBackUp.Diagnosis = dTO.Diagnosis;
 
              _unitOfWork.Repository<Record>().Create(recordData);
-            _backupDBContext.Add(recordBackUp);
-            _backupDBContext.SaveChanges();
+             _records.InsertOneAsync(recordBackUp);
             _unitOfWork.Complete();
             return Ok();    
         }
