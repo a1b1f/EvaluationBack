@@ -10,17 +10,20 @@ namespace Task.Api.Controllers
     [ApiController]
     public class ClinicBackupController : ControllerBase
     {
-        private readonly IRepositoryBase<Records> _ClinicRepo;
+         private readonly IMongoCollection<Records> _records;
 
 
-        public ClinicBackupController(IRepositoryBase<Records> ClinicRepo, BackupDBContext backupDBContext)
+
+        public ClinicBackupController(BackupDBContext backupDBContext, IOptions<ClincSettings> options)
         {
-            _ClinicRepo = ClinicRepo;
+           var mongo = new MongoClient(options.Value.ConnectionStrings);
+            _records = mongo.GetDatabase(options.Value.DatabaseName).GetCollection<Records>(options.Value.RecordCollection);
         }
         [HttpGet]
-        public IActionResult GetRecordsData()
-        {
-            return Ok(_ClinicRepo.FindAll());
-        }
+         public async Task<List<Records>> GetData()
+   {
+
+       return await _records.Find(_ => true).ToListAsync();
+   }
     }
 }
